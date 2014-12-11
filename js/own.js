@@ -12,21 +12,25 @@ String.prototype.padded = function () {
 
 var meetingTimer = (function () {
 
-	// private
-
 	var currentTime
 			, lastTime
 			, remainingTime
 			, passedTime
 			, timerID
-			, tickrate = 100
 			, $minutes = $('span.minutes')
 			, $seconds = $('span.seconds')
 			, $seperator = $('span.seperator')
+			, $buttonStart = $('input.control.start')
+			, $buttonPause = $('input.control.pause')
+			, $buttonStop = $('input.control.stop')
 			, seperatorVisibility = true
 			, lastSeconds
+			, NINETY_MINUTES = 5400000
+			, TICKRATE = 100
 			;
 
+
+	// private
 	var updateTimer = function () {
 
 		currentTime = new Date();
@@ -35,12 +39,11 @@ var meetingTimer = (function () {
 
 		if (remainingTime < 0) {
 			stop();
-			stop();
 		}
 
 		else {
 
-			var currentSeconds = remainingTime.getSeconds();
+			var currentSeconds = remainingTime.getUTCSeconds();
 			if (currentSeconds != lastSeconds) updateClock();
 			lastSeconds = currentSeconds;
 
@@ -55,8 +58,9 @@ var meetingTimer = (function () {
 	};
 
 	var updateClock = function () {
-		$minutes.text(remainingTime.getMinutes().toString().padded());
-		$seconds.text(remainingTime.getSeconds().toString().padded());
+		//noinspection MagicNumberJS
+		$minutes.text((remainingTime.getUTCMinutes()+(remainingTime.getUTCHours()*60)).toString().padded());
+		$seconds.text(remainingTime.getUTCSeconds().toString().padded());
 	};
 
 	var init = function () {
@@ -74,53 +78,53 @@ var meetingTimer = (function () {
 			}(time);
 		}
 
-		document.querySelector('input.control.start').onclick = function () {
-			start()
-		};
-		document.querySelector('input.control.stop').onclick = function () {
-			stop()
-		};
-
-		document.querySelector('input.control.pause').onclick = function () {
-			pause()
-		};
+		$buttonStart.click(function () {start()});
+		$buttonStop.click(function () {stop()});
+		$buttonPause.click(function () {pause()});
 
 		remainingTime = new Date(0);
-		remainingTime.setMinutes(remainingTime.getMinutes() + 10);
-		start();
+		updateClock();
 	};
 
 	var start = function () {
 
 		lastTime = new Date();
 		if (!timerID) {
-			timerID = setInterval(updateTimer, tickrate);
+			timerID = setInterval(updateTimer, TICKRATE);
+			$buttonStart.addClass('hide');
+			$buttonPause.removeClass('hide');
 		}
 
 
 	};
 
 	var addTime = function (minutes) {
-		remainingTime.setMinutes(remainingTime.getMinutes() + minutes);
+		remainingTime.setMinutes(remainingTime.getUTCMinutes() + minutes);
 		if (remainingTime < 0) stop();
-		else updateClock();
+		else if (remainingTime > NINETY_MINUTES) remainingTime = new Date (NINETY_MINUTES);
+		updateClock();
 	};
 
 	var stop = function () {
 		clearTimeout(timerID);
+
 		timerID = 0;
-
 		remainingTime = new Date(0);
-		updateClock();
 
-		$seperator.classList.remove('invisible');
+		updateClock();
+		$seperator.removeClass('invisible');
+		$buttonStart.removeClass('hide');
+		$buttonPause.addClass('hide');
+
 	};
 
 	var pause = function () {
 		clearTimeout(timerID);
 		timerID = 0;
 		updateClock();
-		$seperator.classList.remove('invisible');
+		$seperator.removeClass('invisible');
+		$buttonStart.removeClass('hide');
+		$buttonPause.addClass('hide');
 	};
 
 	// public
