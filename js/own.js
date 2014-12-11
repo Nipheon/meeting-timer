@@ -1,6 +1,4 @@
 // todo play sounds
-// todo allow 99 minutes
-//
 
 String.prototype.padded = function () {
 
@@ -27,6 +25,7 @@ var meetingTimer = (function () {
 			, lastSeconds
 			, NINETY_MINUTES = 5400000
 			, TICKRATE = 100
+			, keymap = [{}]
 			;
 
 
@@ -51,7 +50,6 @@ var meetingTimer = (function () {
 			if (Math.round((remainingTime.getMilliseconds()) / 1000) ^ seperatorVisibility) {
 				$seperator.toggleClass('invisible');
 				seperatorVisibility = !seperatorVisibility;
-
 			}
 			lastTime = currentTime;
 		}
@@ -64,6 +62,33 @@ var meetingTimer = (function () {
 	};
 
 	var init = function () {
+
+		// build keymap
+
+		keymap[27] = {};
+		keymap[27]['function'] = 'stop';
+		keymap[32] = {};
+		keymap[32]['function'] = 'startOrPause';
+		keymap[48] = {};
+		keymap[48]['function'] = 'addTime';
+		keymap[48]['value'] = 10;
+
+		for (i = 1; i <= 9; i++) {
+			keymap[48+i] = {};
+			keymap[48+i]['function'] = 'addTime';
+			keymap[48+i]['value'] = i;
+		}
+
+
+		$(document).bind('keydown', function (e) {
+			//check if key is in the map and then call resp function
+			if (keymap[e.keyCode]) {
+				var shift = e.shiftKey;
+				var value = keymap[e.keyCode]['value'];
+				value -= (value*shift*2);
+				meetingTimer[keymap[e.keyCode]['function']](value);
+			}
+		});
 
 		var $timeButtons = document.querySelectorAll('input.addTime');
 
@@ -89,12 +114,19 @@ var meetingTimer = (function () {
 	var start = function () {
 
 		lastTime = new Date();
-		if (!timerID) {
+		if (!timerID && remainingTime > 0) {
 			timerID = setInterval(updateTimer, TICKRATE);
 			$buttonStart.addClass('hide');
 			$buttonPause.removeClass('hide');
 		}
 
+
+	};
+
+	var startOrPause = function () {
+
+		if (timerID) pause();
+		else start();
 
 	};
 
@@ -130,9 +162,13 @@ var meetingTimer = (function () {
 	// public
 	return {
 
+		foo: keymap,
+
 		init: function () {
 			init()
 		}
+
+		, startOrPause: function () {startOrPause()}
 
 		, start: function () {
 			start()
